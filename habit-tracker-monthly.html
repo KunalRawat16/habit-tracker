@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080c18;
+  --bg2:      #0d1224;
+  --panel:    #111827;
+  --card:     #151e30;
+  --border:   #1e2d45;
+  --border2:  #243350;
+  --accent:   #3b82f6;
+  --accent2:  #60a5fa;
+  --green:    #22c55e;
+  --green2:   #4ade80;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --text:     #e2e8f0;
+  --text2:    #94a3b8;
+  --text3:    #4a5568;
+  --done:     #1a3a2a;
+  --done-b:   #22c55e;
+  --miss:     #2a1a1a;
+  --future:   #0f172a;
+  --r:        12px;
+  --r2:       8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+
+/* ── GRID BG ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:40px 40px;opacity:0.15;pointer-events:none;z-index:0;
+}
+
+/* ── APP SHELL ── */
+.app{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding-bottom:80px;}
+
+/* ── HEADER ── */
+header{padding:40px 20px 16px;display:flex;flex-direction:column;gap:12px;}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.header-left{}
+.brand{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;}
+.month-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);line-height:1;}
+.month-nav{display:flex;align-items:center;gap:6px;margin-top:8px;}
+.nav-btn{width:30px;height:30px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.nav-btn:active{background:var(--border2);transform:scale(.9);}
+.nav-today{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;}
+.nav-today:active{border-color:var(--accent);color:var(--accent);}
+
+/* month summary chips */
+.month-summary{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);}
+.chip b{color:var(--text);font-weight:500;}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.chip-dot.g{background:var(--green);}
+.chip-dot.a{background:var(--amber);}
+
+/* ── VIEW TABS ── */
+.view-tabs{display:flex;gap:4px;padding:0 20px 0;}
+.tab{flex:1;padding:9px 6px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);color:var(--text3);cursor:pointer;transition:all .2s;text-align:center;}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tab:active{transform:scale(.96);}
+
+/* ── ADD HABIT ── */
+.add-bar{display:flex;gap:8px;padding:12px 20px 0;}
+.add-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 14px;outline:none;caret-color:var(--accent);transition:border-color .2s;}
+.add-input::placeholder{color:var(--text3);}
+.add-input:focus{border-color:var(--accent);}
+.add-btn{width:40px;height:40px;background:var(--accent);border:none;border-radius:var(--r2);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.add-btn:active{transform:scale(.88);background:var(--accent2);}
+
+/* ── VIEWS WRAPPER ── */
+.views{flex:1;padding:16px 20px 0;display:flex;flex-direction:column;gap:12px;}
+
+/* ══════════════════════════════════════════
+   VIEW 1 — HEATMAP (GitHub contribution style)
+   ══════════════════════════════════════════ */
+.heatmap-view{}
+.heatmap-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;animation:fadeUp .3s ease both;}
+.heatmap-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.heatmap-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.heatmap-stats{display:flex;gap:10px;flex-shrink:0;}
+.hs{text-align:right;}
+.hs-val{font-size:13px;font-weight:500;color:var(--green);}
+.hs-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.hm-day{aspect-ratio:1;border-radius:3px;cursor:pointer;transition:transform .1s,opacity .15s;position:relative;}
+.hm-day:active{transform:scale(.8);}
+.hm-day.future{background:var(--future);cursor:default;}
+.hm-day.miss{background:#1e2538;}
+.hm-day.done{background:var(--green);}
+.hm-day.today-marker{box-shadow:0 0 0 2px var(--accent);}
+.hm-day-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.3);pointer-events:none;}
+.hm-legend{display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:flex-end;}
+.hm-legend span{font-size:9px;color:var(--text3);}
+.hm-legend-box{width:10px;height:10px;border-radius:2px;}
+/* streak/pct bar */
+.hm-bar-wrap{height:3px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;}
+.hm-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width .5s cubic-bezier(.4,0,.2,1);}
+/* card actions */
+.hm-actions{display:flex;gap:4px;flex-shrink:0;}
+.ic-btn{width:28px;height:28px;background:transparent;border:none;border-radius:6px;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;}
+.ic-btn:active{transform:scale(.85);}
+.ic-btn.edit:hover{color:var(--accent2);}
+.ic-btn.del:hover{color:var(--red);}
+
+/* ══════════════════════════════════════════
+   VIEW 2 — MONTH TABLE (days as columns)
+   ══════════════════════════════════════════ */
+.month-view{overflow-x:auto;padding-bottom:4px;}
+.month-table{min-width:max-content;border-collapse:separate;border-spacing:0;}
+.month-table th{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:4px 0;text-align:center;font-weight:500;min-width:28px;}
+.month-table th.today-col{color:var(--accent);}
+.month-table th.habit-col{text-align:left;padding-right:10px;min-width:120px;max-width:150px;font-size:10px;letter-spacing:.08em;position:sticky;left:0;background:var(--bg);z-index:2;}
+.month-table td{padding:2px 2px;vertical-align:middle;}
+.month-table td.habit-name-cell{font-size:12px;color:var(--text);padding-right:10px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--bg);z-index:2;}
+.month-table tr:hover td.habit-name-cell{color:var(--accent2);}
+.day-cell{width:26px;height:26px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto;transition:transform .1s;}
+.day-cell:active{transform:scale(.75);}
+.day-cell.done{background:var(--green);color:#fff;}
+.day-cell.miss{background:#1e2538;}
+.day-cell.future{background:transparent;cursor:default;opacity:.3;}
+.day-cell.today-cell{box-shadow:0 0 0 2px var(--accent);}
+.day-cell svg{width:10px;height:10px;}
+.pct-cell{font-size:10px;color:var(--green);font-weight:500;padding-left:6px;white-space:nowrap;}
+.streak-cell{font-size:10px;color:var(--amber);white-space:nowrap;}
+/* table header row */
+.month-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;overflow-x:auto;}
+
+/* ══════════════════════════════════════════
+   VIEW 3 — WEEKLY
+   ══════════════════════════════════════════ */
+.weekly-view{}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.week-label{flex:1;text-align:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text2);}
+.week-day-headers{display:grid;grid-template-columns:minmax(100px,1.5fr) repeat(7,1fr);gap:3px;margin-bottom:3px;padding:0 2px;}
+.wdh{text-align:center;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:4px 0;}
+.wdh.today-wdh{color:var(--accent);}
+.wdh:first-child{text-align:left;padding-left:10px;}
+.weekly-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);display:grid;grid-template-columns:minmax(100px,1.5fr) repeat(7,1fr);gap:3px;padding:8px 10px;margin-bottom:4px;align-items:center;animation:fadeUp .25s ease both;}
+.weekly-card .wc-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wc-cell{display:flex;align-items:center;justify-content:center;}
+.wc-dot{width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s;}
+.wc-dot:active{transform:scale(.75);}
+.wc-dot.done{background:var(--green);}
+.wc-dot.miss{background:#1e2538;}
+.wc-dot.future{background:transparent;cursor:default;opacity:.25;}
+.wc-dot.today-dot{box-shadow:0 0 0 2px var(--accent);}
+.wc-dot svg{width:10px;height:10px;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text3);}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4;}
+.empty-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--text2);margin-bottom:6px;}
+.empty-sub{font-size:12px;line-height:1.7;}
+
+/* ── BOTTOM NAV (stat bar) ── */
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:12px 20px 20px;z-index:50;}
+.stat-row{display:flex;justify-content:space-around;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:10px 0;}
+.stat{text-align:center;}
+.stat-n{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);}
+.stat-n.g{color:var(--green);}
+.stat-n.a{color:var(--amber);}
+.stat-l{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);}
+
+/* ── MODAL (edit / delete) ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.sheet{background:var(--panel);border:1px solid var(--border2);border-bottom:none;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:520px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.overlay.open .sheet{transform:translateY(0);}
+.sheet-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;}
+.sheet-sub{font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.6;}
+.sheet-input{width:100%;background:var(--card);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 14px;outline:none;caret-color:var(--accent);margin-bottom:14px;}
+.sheet-input:focus{border-color:var(--accent);}
+.sheet-btns{display:flex;gap:10px;}
+.sheet-cancel{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:13px;cursor:pointer;transition:all .15s;}
+.sheet-cancel:active{background:var(--border);}
+.sheet-ok{flex:1;border:none;border-radius:var(--r2);color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:13px;cursor:pointer;transition:all .15s;}
+.sheet-ok.blue{background:var(--accent);}
+.sheet-ok.red{background:var(--red);}
+.sheet-ok:active{opacity:.85;transform:scale(.97);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--card);border:1px solid var(--border2);border-left:3px solid var(--green);color:var(--text);padding:9px 18px;border-radius:8px;font-size:12px;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:200;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="header-left">
+        <div class="brand">Habit Tracker</div>
+        <div class="month-title" id="monthTitle">April 2025</div>
+        <div class="month-nav">
+          <button class="nav-btn" id="prevBtn">&#8249;</button>
+          <button class="nav-btn" id="nextBtn">&#8250;</button>
+          <button class="nav-today" id="todayBtn">Today</button>
+        </div>
+      </div>
+    </div>
+    <div class="month-summary" id="monthSummary"></div>
+  </header>
+
+  <!-- VIEW TABS -->
+  <div class="view-tabs">
+    <div class="tab active" data-view="heatmap">🔥 Heatmap</div>
+    <div class="tab" data-view="monthly">📅 Monthly</div>
+    <div class="tab" data-view="weekly">📆 Weekly</div>
+  </div>
+
+  <!-- ADD BAR -->
+  <div class="add-bar">
+    <input class="add-input" id="addInput" type="text" placeholder="+ Add habit…" maxlength="60" autocomplete="off">
+    <button class="add-btn" id="addBtn">+</button>
+  </div>
+
+  <!-- VIEWS -->
+  <div class="views" id="viewContainer"></div>
+
+</div>
+
+<!-- BOTTOM STATS -->
+<div class="bottom-bar">
+  <div class="stat-row">
+    <div class="stat"><div class="stat-n" id="sHabits">0</div><div class="stat-l">Habits</div></div>
+    <div class="stat"><div class="stat-n g" id="sDone">0</div><div class="stat-l">Done Today</div></div>
+    <div class="stat"><div class="stat-n a" id="sStreak">0</div><div class="stat-l">Best Streak</div></div>
+    <div class="stat"><div class="stat-n" id="sPct">0%</div><div class="stat-l">Month %</div></div>
+  </div>
+</div>
+
+<!-- EDIT SHEET -->
+<div class="overlay" id="editOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Edit Habit</div>
+    <div class="sheet-sub">Rename this habit.</div>
+    <input class="sheet-input" id="editInput" type="text" maxlength="60">
+    <div class="sheet-btns">
+      <button class="sheet-cancel" id="editCancel">Cancel</button>
+      <button class="sheet-ok blue" id="editSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE SHEET -->
+<div class="overlay" id="delOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Delete Habit?</div>
+    <div class="sheet-sub" id="delSub"></div>
+    <div class="sheet-btns">
+      <button class="sheet-cancel" id="delCancel">Keep</button>
+      <button class="sheet-ok red" id="delConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STORAGE ─────────────────────────────────────────────────────────
+const SK = 'ht_v2';
+let state = { habits: [], logs: {} };  // logs: { "habitId_YYYY-MM-DD": true }
+let viewMode = 'heatmap';
+let viewDate = new Date();  // current month being viewed
+let weekOffset = 0;         // for weekly view
+
+function load() {
+  try { const r = localStorage.getItem(SK); if(r) state = JSON.parse(r); } catch{}
+}
+function save() { localStorage.setItem(SK, JSON.stringify(state)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ─── DATE HELPERS ────────────────────────────────────────────────────
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function today() { return ymd(new Date()); }
+function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+function isToday(dateStr) { return dateStr === today(); }
+function isFuture(dateStr) { return dateStr > today(); }
+function logKey(habitId, dateStr) { return `${habitId}_${dateStr}`; }
+function isDone(habitId, dateStr) { return !!state.logs[logKey(habitId, dateStr)]; }
+function toggle(habitId, dateStr) {
+  if (isFuture(dateStr)) return;
+  const k = logKey(habitId, dateStr);
+  if (state.logs[k]) delete state.logs[k]; else state.logs[k] = true;
+  save(); render(); showToast(state.logs[k] ? '✓ Marked done' : '↩ Unmarked');
+}
+
+// ─── STREAK CALC ─────────────────────────────────────────────────────
+function calcStreak(habitId) {
+  const t = new Date(); let cur = 0, best = 0, run = 0;
+  // scan last 365 days
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(t); d.setDate(d.getDate() - i);
+    const ds = ymd(d);
+    if (isFuture(ds)) continue;
+    if (isDone(habitId, ds)) { run++; if(i===0||i<cur+1) cur = run; best = Math.max(best, run); }
+    else { if(i === 0) cur = 0; run = 0; }
+  }
+  // current streak: consecutive from today backwards
+  let cs = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(t); d.setDate(d.getDate() - i);
+    if (isFuture(ymd(d))) continue;
+    if (isDone(habitId, ymd(d))) cs++; else break;
+  }
+  return { current: cs, best };
+}
+
+function monthPct(habitId, y, m) {
+  const days = daysInMonth(y, m);
+  const todayDate = new Date(); 
+  const isCurrentMonth = (todayDate.getFullYear()===y && todayDate.getMonth()===m);
+  const countDays = isCurrentMonth ? todayDate.getDate() : days;
+  let done = 0;
+  for (let d = 1; d <= countDays; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (isDone(habitId, ds)) done++;
+  }
+  return countDays ? Math.round((done/countDays)*100) : 0;
+}
+
+// ─── RENDER DISPATCHER ───────────────────────────────────────────────
+function render() {
+  updateHeader();
+  updateStats();
+  const vc = document.getElementById('viewContainer');
+  vc.innerHTML = '';
+  if (!state.habits.length) {
+    vc.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No habits yet</div><div class="empty-sub">Add your first habit above<br>to start tracking your month.</div></div>`;
+    return;
+  }
+  if (viewMode === 'heatmap') renderHeatmap(vc);
+  if (viewMode === 'monthly') renderMonthly(vc);
+  if (viewMode === 'weekly')  renderWeekly(vc);
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────
+function updateHeader() {
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('monthTitle').textContent = `${monthNames[m]} ${y}`;
+
+  // overall month summary chips
+  const total = state.habits.length;
+  let totalDone = 0, totalPossible = 0;
+  const todayObj = new Date(); 
+  const isCurMonth = (todayObj.getFullYear()===y && todayObj.getMonth()===m);
+  const countDays = isCurMonth ? todayObj.getDate() : daysInMonth(y,m);
+  state.habits.forEach(h => {
+    for (let d=1; d<=countDays; d++) {
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if(isDone(h.id, ds)) totalDone++;
+      totalPossible++;
+    }
+  });
+  const pct = totalPossible ? Math.round((totalDone/totalPossible)*100) : 0;
+
+  // best streak across all habits this month
+  let topStreak = 0;
+  state.habits.forEach(h => { const s = calcStreak(h.id); topStreak = Math.max(topStreak, s.current); });
+
+  document.getElementById('monthSummary').innerHTML = `
+    <div class="chip"><div class="chip-dot"></div><b>${total}</b> habits</div>
+    <div class="chip"><div class="chip-dot g"></div><b>${pct}%</b> completion</div>
+    <div class="chip"><div class="chip-dot a"></div><b>${topStreak}d</b> top streak</div>
+  `;
+}
+
+// ─── STATS BAR ───────────────────────────────────────────────────────
+function updateStats() {
+  const td = today();
+  let doneToday = 0;
+  state.habits.forEach(h => { if(isDone(h.id, td)) doneToday++; });
+  let bestStreak = 0;
+  state.habits.forEach(h => { bestStreak = Math.max(bestStreak, calcStreak(h.id).best); });
+
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  let td2=0, tp=0;
+  const todayObj = new Date();
+  const isCurMonth = (todayObj.getFullYear()===y && todayObj.getMonth()===m);
+  const cd = isCurMonth ? todayObj.getDate() : daysInMonth(y,m);
+  state.habits.forEach(h => {
+    for(let d=1;d<=cd;d++){
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if(isDone(h.id,ds)) td2++; tp++;
+    }
+  });
+  const pct = tp ? Math.round((td2/tp)*100) : 0;
+
+  document.getElementById('sHabits').textContent = state.habits.length;
+  document.getElementById('sDone').textContent   = `${doneToday}/${state.habits.length}`;
+  document.getElementById('sStreak').textContent = bestStreak + 'd';
+  document.getElementById('sPct').textContent    = pct + '%';
+}
+
+// ─── HEATMAP VIEW ────────────────────────────────────────────────────
+function renderHeatmap(vc) {
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  const days = daysInMonth(y, m);
+  const firstDow = new Date(y, m, 1).getDay(); // 0=Sun
+
+  state.habits.forEach((h, hi) => {
+    const { current, best } = calcStreak(h.id);
+    const pct = monthPct(h.id, y, m);
+
+    const card = document.createElement('div');
+    card.className = 'heatmap-card';
+    card.style.animationDelay = (hi * 0.04) + 's';
+
+    // build grid cells: pad start, then all days
+    let cells = '';
+    // day-of-week labels row
+    const dowLabels = ['S','M','T','W','T','F','S'];
+    cells += dowLabels.map(l => `<div style="text-align:center;font-size:8px;color:var(--text3);padding-bottom:2px">${l}</div>`).join('');
+
+    // empty cells before day 1
+    for (let i = 0; i < firstDow; i++) cells += `<div></div>`;
+
+    for (let d = 1; d <= days; d++) {
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const fut = isFuture(ds);
+      const done = !fut && isDone(h.id, ds);
+      const todayMark = isToday(ds) ? ' today-marker' : '';
+      const cls = fut ? 'future' : (done ? 'done' : 'miss');
+      cells += `<div class="hm-day ${cls}${todayMark}" data-hid="${h.id}" data-date="${ds}" title="${ds}">
+        <div class="hm-day-num">${d}</div>
+      </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="heatmap-header">
+        <div class="heatmap-name">${escH(h.name)}</div>
+        <div class="heatmap-stats">
+          <div class="hs"><div class="hs-val">${pct}%</div><div class="hs-lbl">Month</div></div>
+          <div class="hs"><div class="hs-val" style="color:var(--amber)">${current}d</div><div class="hs-lbl">Streak</div></div>
+          <div class="hs"><div class="hs-val" style="color:var(--text2)">${best}d</div><div class="hs-lbl">Best</div></div>
+        </div>
+        <div class="hm-actions">
+          <button class="ic-btn edit" data-hid="${h.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="ic-btn del" data-hid="${h.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="heatmap-grid">${cells}</div>
+      <div class="hm-bar-wrap"><div class="hm-bar-fill" style="width:${pct}%"></div></div>
+    `;
+
+    card.querySelectorAll('.hm-day[data-date]').forEach(el => {
+      el.addEventListener('click', () => toggle(el.dataset.hid, el.dataset.date));
+    });
+    card.querySelector('.ic-btn.edit').addEventListener('click', () => openEdit(h.id));
+    card.querySelector('.ic-btn.del').addEventListener('click', () => openDel(h.id));
+    vc.appendChild(card);
+  });
+}
+
+// ─── MONTHLY TABLE VIEW ──────────────────────────────────────────────
+function renderMonthly(vc) {
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  const days = daysInMonth(y, m);
+  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'month-table-wrap';
+
+  let thead = `<tr><th class="habit-col">Habit</th>`;
+  for (let d = 1; d <= days; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(y, m, d).getDay();
+    const tc = isToday(ds) ? ' today-col' : '';
+    thead += `<th class="${tc}" title="${ds}">${dayNames[dow]}<br><span style="font-size:8px">${d}</span></th>`;
+  }
+  thead += `<th>%</th><th>🔥</th></tr>`;
+
+  let tbody = '';
+  state.habits.forEach(h => {
+    const { current } = calcStreak(h.id);
+    const pct = monthPct(h.id, y, m);
+    let row = `<tr><td class="habit-name-cell" title="${escH(h.name)}">${escH(h.name)}</td>`;
+    for (let d = 1; d <= days; d++) {
+      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const fut = isFuture(ds);
+      const done = !fut && isDone(h.id, ds);
+      const tc = isToday(ds) ? ' today-cell' : '';
+      const cls = fut ? 'future' : (done ? 'done' : 'miss');
+      row += `<td><div class="day-cell ${cls}${tc}" data-hid="${h.id}" data-date="${ds}">
+        ${done ? `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+      </div></td>`;
+    }
+    row += `<td class="pct-cell">${pct}%</td><td class="streak-cell">${current}d</td></tr>`;
+    tbody += row;
+  });
+
+  wrap.innerHTML = `<table class="month-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  wrap.querySelectorAll('.day-cell[data-date]').forEach(el => {
+    el.addEventListener('click', () => toggle(el.dataset.hid, el.dataset.date));
+  });
+  vc.appendChild(wrap);
+}
+
+// ─── WEEKLY VIEW ─────────────────────────────────────────────────────
+function renderWeekly(vc) {
+  // find the week containing today + weekOffset weeks
+  const base = new Date();
+  base.setDate(base.getDate() + weekOffset * 7);
+  // find Sunday of that week
+  const sunday = new Date(base);
+  sunday.setDate(base.getDate() - base.getDay());
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday); d.setDate(sunday.getDate() + i);
+    days.push({ date: ymd(d), d, label: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i], num: d.getDate() });
+  }
+
+  const startStr = days[0].d.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
+  const endStr   = days[6].d.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
+
+  // week nav
+  const nav = document.createElement('div');
+  nav.className = 'week-nav';
+  nav.innerHTML = `
+    <button class="nav-btn" id="wPrev">&#8249;</button>
+    <div class="week-label">${startStr} — ${endStr}</div>
+    <button class="nav-btn" id="wNext">&#8250;</button>
+  `;
+  nav.querySelector('#wPrev').addEventListener('click', () => { weekOffset--; render(); });
+  nav.querySelector('#wNext').addEventListener('click', () => { if(weekOffset < 0) { weekOffset++; render(); } });
+  vc.appendChild(nav);
+
+  // day-of-week headers
+  const hdrRow = document.createElement('div');
+  hdrRow.className = 'week-day-headers';
+  hdrRow.innerHTML = `<div class="wdh">Habit</div>` + days.map(d =>
+    `<div class="wdh${isToday(d.date)?' today-wdh':''}">${d.label}<br><span style="font-size:8px">${d.num}</span></div>`
+  ).join('');
+  vc.appendChild(hdrRow);
+
+  state.habits.forEach((h, hi) => {
+    const card = document.createElement('div');
+    card.className = 'weekly-card';
+    card.style.animationDelay = (hi * 0.03) + 's';
+    card.innerHTML = `<div class="wc-name">${escH(h.name)}</div>` + days.map(d => {
+      const fut = isFuture(d.date);
+      const done = !fut && isDone(h.id, d.date);
+      const tc = isToday(d.date) ? ' today-dot' : '';
+      const cls = fut ? 'future' : (done ? 'done' : 'miss');
+      return `<div class="wc-cell"><div class="wc-dot ${cls}${tc}" data-hid="${h.id}" data-date="${d.date}">
+        ${done ? `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+      </div></div>`;
+    }).join('');
+    card.querySelectorAll('.wc-dot[data-date]').forEach(el => {
+      el.addEventListener('click', () => toggle(el.dataset.hid, el.dataset.date));
+    });
+    vc.appendChild(card);
+  });
+}
+
+// ─── ADD HABIT ───────────────────────────────────────────────────────
+function addHabit() {
+  const inp = document.getElementById('addInput');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  if (state.habits.find(h => h.name.toLowerCase() === name.toLowerCase())) {
+    showToast('⚠ Habit already exists'); return;
+  }
+  state.habits.push({ id: uid(), name, createdAt: Date.now() });
+  save(); inp.value = ''; render(); showToast('Habit added ✨');
+}
+document.getElementById('addBtn').addEventListener('click', addHabit);
+document.getElementById('addInput').addEventListener('keydown', e => { if(e.key==='Enter') addHabit(); });
+
+// ─── TABS ────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    viewMode = t.dataset.view;
+    weekOffset = 0;
+    render();
+  });
+});
+
+// ─── MONTH NAV ───────────────────────────────────────────────────────
+document.getElementById('prevBtn').addEventListener('click', () => {
+  viewDate.setMonth(viewDate.getMonth() - 1); render();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  viewDate.setMonth(viewDate.getMonth() + 1); render();
+});
+document.getElementById('todayBtn').addEventListener('click', () => {
+  viewDate = new Date(); render();
+});
+
+// ─── EDIT ────────────────────────────────────────────────────────────
+let editTarget = null;
+function openEdit(id) {
+  editTarget = id;
+  const h = state.habits.find(x => x.id === id);
+  document.getElementById('editInput').value = h.name;
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('editInput').focus(), 300);
+}
+document.getElementById('editCancel').addEventListener('click', () => {
+  document.getElementById('editOverlay').classList.remove('open'); editTarget = null;
+});
+document.getElementById('editSave').addEventListener('click', () => {
+  const val = document.getElementById('editInput').value.trim();
+  if (val && editTarget) {
+    const h = state.habits.find(x => x.id === editTarget);
+    if (h) { h.name = val; save(); render(); showToast('Habit updated'); }
+  }
+  document.getElementById('editOverlay').classList.remove('open'); editTarget = null;
+});
+document.getElementById('editInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('editSave').click(); });
+
+// ─── DELETE ──────────────────────────────────────────────────────────
+let delTarget = null;
+function openDel(id) {
+  delTarget = id;
+  const h = state.habits.find(x => x.id === id);
+  document.getElementById('delSub').textContent = `"${h?.name}" and all its tracking data will be permanently removed.`;
+  document.getElementById('delOverlay').classList.add('open');
+}
+document.getElementById('delCancel').addEventListener('click', () => {
+  document.getElementById('delOverlay').classList.remove('open'); delTarget = null;
+});
+document.getElementById('delConfirm').addEventListener('click', () => {
+  if (delTarget) {
+    state.habits = state.habits.filter(h => h.id !== delTarget);
+    // clean logs
+    Object.keys(state.logs).forEach(k => { if(k.startsWith(delTarget+'_')) delete state.logs[k]; });
+    save(); render(); showToast('Habit deleted');
+  }
+  document.getElementById('delOverlay').classList.remove('open'); delTarget = null;
+});
+// close overlay on bg click
+['editOverlay','delOverlay'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target.id === id) { document.getElementById(id).classList.remove('open'); editTarget = delTarget = null; }
+  });
+});
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+let toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── UTIL ─────────────────────────────────────────────────────────────
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── BOOT ────────────────────────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
